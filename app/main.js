@@ -1,9 +1,12 @@
-const http = require('http');
-const fs = require('fs/promises');
-const path = require('path');
-const { execFile } = require('child_process');
+import http from 'http';
+import fs from 'fs/promises';
+import path from 'path';
+import { execFile } from 'child_process';
+import crypto from 'crypto';
+import { fileURLToPath } from 'url';
 
-// /Users/vimaster/Desktop/hackernav/main.js
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
 const PAGE_PATH = path.join(__dirname, '/static/page.html');
@@ -113,7 +116,7 @@ function renderRows(steps) {
     html += '</div>';
     return html;
 }
-const crypto = require('crypto');
+
 const server = http.createServer(async (req, res) => {
     try {
         const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);

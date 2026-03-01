@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+import { request } from 'https';
+import polyline from '@mapbox/polyline';
+
+const { decode } = polyline;
 
 const { argv, env } = process;
 
@@ -83,7 +87,6 @@ function buildWalk(req, formatted = false) {
 
 function postJson(path, bodyObj) {
   return new Promise((resolve, reject) => {
-    const https = require('https');
     const url = new URL(path, env.SH_API_BASE_URL || DEFAULT_BASE_URL);
     // Ensure trailing slash handling
     const fullPath = `${url.pathname.replace(/\/$/, '')}/${DEFAULT_ENDPOINT}`;
@@ -98,7 +101,7 @@ function postJson(path, bodyObj) {
         'Accept': 'application/json'
       }
     };
-    const req = https.request(options, res => {
+    const req = request(options, res => {
       const chunks = [];
       res.on('data', d => chunks.push(d));
       res.on('end', () => {
@@ -433,8 +436,7 @@ async function getWalks(trip) {
     if (typeof leg.gisCtx === 'string') {
       const envp = buildWalk(leg.gisCtx, false);
       const json = await postJson('/', envp);
-      const mapbox = require('@mapbox/polyline');
-      const coords = mapbox.decode(json.svcResL[0].res.common.polyL[0].crdEncYX).map(c => `${c[1]},${c[0]}`).join(',');
+      const coords = decode(json.svcResL[0].res.common.polyL[0].crdEncYX).map(c => `${c[1]},${c[0]}`).join(',');
       const startCoord = coords.split(',').slice(0, 2).join(',');
       const endCoord = coords.split(',').slice(-2).join(',');
       const apiKey = env.GEOAPIFY_API_KEY;
@@ -444,7 +446,7 @@ async function getWalks(trip) {
         `&marker=lonlat:${endCoord};type:awesome;color:%2300983a;size:64;icon:2;contentsize:25;contentcolor:%23ffffff;whitecircle:no` +
         `&apiKey=${apiKey}`;
       // calculate using mapbox
-      leg.distanceInMeters = mapbox.decode(json.svcResL[0].res.common.polyL[0].crdEncYX).reduce((sum, c, i, arr) => {
+      leg.distanceInMeters = decode(json.svcResL[0].res.common.polyL[0].crdEncYX).reduce((sum, c, i, arr) => {
         if (i === 0) return 0;
         const prev = arr[i-1];
         const R = 6371000; // Earth radius in meters
