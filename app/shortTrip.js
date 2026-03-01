@@ -467,24 +467,16 @@ async function getWalks(trip) {
   return trip;
 }
 
-async function main() {
-  const { json, debug, start, dest, arrive } = parseArgs(argv.slice(2));
-  const startOptions = await suggestLocations(start);
-  const destOptions = await suggestLocations(dest);
+export async function runShortTripMain(start, dest, arrive) {
+  const startOptions = await suggestLocations(start.trim());
+  const destOptions = await suggestLocations(dest.trim());
   if (startOptions.length === 0 || destOptions.length === 0) {
-    console.error('No matching locations for start or destination.');
-    process.exit(2);
-  }
-  if (debug) {
-    console.error('Start options:', JSON.stringify(startOptions.slice(0,3), null, 2));
-    console.error('Dest options:', JSON.stringify(destOptions.slice(0,3), null, 2));
-    await debugDumpLocMatch(start);
-    await debugDumpLocMatch(dest);
+    throw new Error('No matching locations for start or destination.');
   }
   const startLoc = startOptions[0];
   const destLoc = destOptions[0];
   if (arrive) {
-    const arriveBy = parseUserArrivalTime(arrive);
+    const arriveBy = parseUserArrivalTime(arrive.trim());
     let res = await queryTrips(startLoc, destLoc, arriveBy, false);
     let chosen = selectLatestBeforeArrival(res.trips || [], arriveBy);
     while (!chosen && res.context && res.context.canQueryLater) {
@@ -492,14 +484,29 @@ async function main() {
       chosen = selectLatestBeforeArrival(res.trips || [], arriveBy);
     }
     if (!chosen) {
-      console.log('No suitable trip found before arrival time.');
-      return;
+      throw new Error('No suitable trip found before arrival time.');
     }
     chosen = await getWalks(chosen);
-    const oneResult = { status: 'OK', trips: [chosen] };
-    if (json) console.log(JSON.stringify(chosen.legs, null, 2)); else printHuman(oneResult);
+    return chosen.legs;
   } else {
     const result = await queryTrips(startLoc, destLoc, nowDate());
+    return result;
+  }
+}
+
+async function main() {
+  const { json, debug, start, dest, arrive } = parseArgs(argv.slice(2));
+  if (debug) {
+    console.error('Start options:', JSON.stringify((await suggestLocations(start)).slice(0,3), null, 2));
+    console.error('Dest options:', JSON.stringify((await suggestLocations(dest)).slice(0,3), null, 2));
+    await debugDumpLocMatch(start);
+    await debugDumpLocMatch(dest);
+  }
+  if (arrive) {
+    const legs = await runShortTripMain(start, dest, arrive);
+    if (json) console.log(JSON.stringify(legs, null, 2)); else printHuman({ status: 'OK', trips: [{ legs }] });
+  } else {
+    const result = await runShortTripMain(start, dest, null);
     if (json) console.log(JSON.stringify(result.raw || result, null, 2)); else printHuman(result);
     if (result.context && result.context.canQueryLater) {
       const laterResult = await queryMoreTrips(result.context, true);
@@ -508,7 +515,11 @@ async function main() {
   }
 }
 
-main().catch(err => {
-  console.error(err.message || String(err));
-  process.exit(1);
-});
+// Run CLI only when executed directly
+const isDirectRun = argv[1] && (argv[1].endsWith('shortTrip.js') || argv[1].endsWith('/shortTrip'));
+if (isDirectRun) {
+  main().catch(err => {
+    console.error(err.message || String(err));
+    process.exit(1);
+  });
+}

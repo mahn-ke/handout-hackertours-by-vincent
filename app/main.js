@@ -1,7 +1,6 @@
 import http from 'http';
 import fs from 'fs/promises';
 import path from 'path';
-import { execFile } from 'child_process';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
@@ -11,30 +10,10 @@ const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 3000;
 const PAGE_PATH = path.join(__dirname, '/static/page.html');
 
+import { runShortTripMain } from './shortTrip.js';
+
 function runShortTrip(from, to, arriveBy) {
-    return new Promise((resolve, reject) => {
-        execFile(
-            'node',
-            [
-                'shortTrip.js',
-                '--json',
-                '--arrive',
-                arriveBy.trim(),
-                from.trim(),
-                to.trim(),
-            ],
-            { cwd: __dirname },
-            (err, stdout) => {
-                if (err) return reject(err);
-                try {
-                    const data = JSON.parse(stdout);
-                    resolve(data);
-                } catch (e) {
-                    reject(new Error('Invalid JSON from shortTrip.js'));
-                }
-            }
-        );
-    });
+    return runShortTripMain(from, to, arriveBy);
 }
 
 function escapeHtml(str) {
