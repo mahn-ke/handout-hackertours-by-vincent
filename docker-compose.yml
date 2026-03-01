@@ -5,6 +5,9 @@ services:
   app:
     image: ghcr.io/mahn-ke/handout-hackertours-by-vincent:latest
     restart: on-failure:5
+    environment:
+      - PASSPHRASE=${PASSPHRASE}
+      - GEOAPIFY_API_KEY=${GEOAPIFY_API_KEY}
     ports:
       - "3002:3000"
     healthcheck:
@@ -12,3 +15,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
