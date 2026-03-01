@@ -206,7 +206,6 @@ async function queryTrips(fromLoc, toLoc, date, dep = true, moreCtx = null) {
     const arrLoc = locList[arr.locX || 0] || {};
     const secL = con.secL || [];
     const legs = [];
-    const walkGisCtxs = [];
     for (const sec of secL) {
       const sdep = sec.dep || {};
       const sarr = sec.arr || {};
@@ -223,9 +222,6 @@ async function queryTrips(fromLoc, toLoc, date, dep = true, moreCtx = null) {
         dir = jny.dirTxt || null;
       } else if (sec.type === 'WALK') {
         line = 'WALK';
-        if (sec.gis && typeof sec.gis.ctx === 'string') {
-          walkGisCtxs.push(sec.gis.ctx);
-        }
       } else if (sec.type === 'TRSF' || sec.type === 'DEVI') {
         line = sec.type === 'TRSF' ? 'TRANSFER' : 'DEVI';
       } else if (sec.type === 'CHKIN' || sec.type === 'CHKOUT') {
@@ -279,7 +275,6 @@ async function queryMoreTrips(context, later) {
     const arrLoc = locList[arr.locX || 0] || {};
     const secL = con.secL || [];
     const legs = [];
-    const walkGisCtxs = [];
     for (const sec of secL) {
       const sdep = sec.dep || {};
       const sarr = sec.arr || {};
@@ -311,19 +306,6 @@ async function queryMoreTrips(context, later) {
         type: sec.type || null,
         gisCtx: (sec.gis && typeof sec.gis.ctx === 'string') ? sec.gis.ctx : null
       });
-    }
-    // Call GIS endpoint for first and last WALK segments (if present)
-    if (walkGisCtxs.length > 0) {
-      try {
-        const firstCtx = walkGisCtxs[0];
-        const respFirst = await postGis('/', firstCtx);
-        const lastCtx = walkGisCtxs[walkGisCtxs.length - 1];
-        if (lastCtx !== firstCtx) {
-          const respLast = await postGis('/', lastCtx);
-        }
-      } catch (e) {
-        console.error(`GIS post failed: ${e.message}`);
-      }
     }
     trips.push({
       from: depLoc.name || null,
