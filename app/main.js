@@ -38,7 +38,7 @@ function lineToStyledHTML(line) {
 
     if (transportPart.startsWith('U')) {
         const number = transportPart.slice(1);
-        return `<div class="o-transport-icon o-transport-icon--16 o-transport-icon--u${number}"><div class="o-transport-icon__number">U${number}</div><div class="sr-only">U${number} U</div></div>${directionPart}`;
+        return `<div class="o-transport-icon o-transport-icon--16 o-transport-icon--u${number}"><div class="o-transport-icon__number">U${number}</div></div>${directionPart}`;
     }
 
     if (transportPart.startsWith('X')) {
