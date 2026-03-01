@@ -5,12 +5,10 @@ services:
   app:
     image: ghcr.io/mahn-ke/handout-hackertours-by-vincent:latest
     restart: on-failure:5
-    environment:
-      - PORT=3002
     ports:
       - "3002:3000"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3002/healthz"]
+      test: ["CMD", "curl", "-f", "http://localhost:3000/healthz"]
       interval: 30s
       timeout: 10s
       retries: 5
