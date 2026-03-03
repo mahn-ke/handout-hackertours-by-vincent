@@ -451,6 +451,16 @@ export class AbstractEfaProvider extends AbstractProvider {
       type = 'JNY';
     }
 
+    /* Extract walk path coordinates for WALK legs.
+       EFA may provide them as:
+         - legRaw.path  (string of space-separated "lon,lat" pairs when coordListOutputFormat=string)
+         - legRaw.coords (array of coordinate pairs)
+       Fallback: use departure/arrival point coordinates for a straight line. */
+    let walkCoords = null;
+    if (type === 'WALK') {
+      walkCoords = this._extractWalkCoords(legRaw, depPoint, arrPoint);
+    }
+
     return {
       depName: this._normalizeLocationName(depPoint.name || depPoint.nameWithPlace) || null,
       depTime: depHci.hciTime,
@@ -460,8 +470,130 @@ export class AbstractEfaProvider extends AbstractProvider {
       dir,
       type,
       gisCtx: null, // EFA does not use HAFAS-style GIS context
+      _walkCoords: walkCoords,
       _baseDate: depHci.hciDate
     };
+  }
+
+  /**
+   * Extract walk-path coordinates from an EFA walking leg.
+   *
+   * Returns an array of [lat, lon] pairs (matching the format used by
+   * the Haversine distance calculation and Geoapify polyline param),
+   * or null if no usable coordinate data is found.
+   *
+   * EFA provides coordinates in several shapes depending on the backend:
+   *   1. legRaw.path – space-separated "lon,lat" string (with coordListOutputFormat=string)
+   *   2. legRaw.coords – array of [lon, lat] pairs or {x, y} objects
+   *   3. Fallback: departure/arrival point ref.coords ("lon,lat" string)
+   */
+  _extractWalkCoords(legRaw, depPoint, arrPoint) {
+    // 1. Try legRaw.path string  (e.g. "8.123,49.456 8.124,49.457 …")
+    if (typeof legRaw.path === 'string' && legRaw.path.trim().length > 0) {
+      const pairs = legRaw.path.trim().split(/\s+/);
+      const coords = [];
+      for (const pair of pairs) {
+        const parts = pair.split(',').map(Number);
+        if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+          coords.push([parts[1], parts[0]]); // [lat, lon]
+        }
+      }
+      if (coords.length >= 2) return coords;
+    }
+
+    // 2. Try legRaw.coords array
+    if (Array.isArray(legRaw.coords) && legRaw.coords.length >= 2) {
+      const coords = [];
+      for (const c of legRaw.coords) {
+        if (Array.isArray(c) && c.length >= 2) {
+          coords.push([c[1], c[0]]); // [lat, lon]
+        } else if (c && typeof c.x === 'number' && typeof c.y === 'number') {
+          coords.push([c.y, c.x]); // y=lat, x=lon
+        }
+      }
+      if (coords.length >= 2) return coords;
+    }
+
+    // 3. Fallback: straight line from departure → arrival point coords
+    const depCoord = this._extractPointCoords(depPoint);
+    const arrCoord = this._extractPointCoords(arrPoint);
+    if (depCoord && arrCoord) return [depCoord, arrCoord];
+
+    return null;
+  }
+
+  /**
+   * Extract [lat, lon] from an EFA point's ref.coords ("lon,lat" string)
+   * or from ref.x / ref.y numeric fields.
+   */
+  _extractPointCoords(point) {
+    if (!point) return null;
+    const ref = point.ref || {};
+    if (typeof ref.coords === 'string') {
+      const parts = ref.coords.split(',').map(Number);
+      if (parts.length >= 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+        return [parts[1], parts[0]]; // [lat, lon]
+      }
+    }
+    if (typeof ref.x === 'number' && typeof ref.y === 'number') {
+      return [ref.y, ref.x];
+    }
+    return null;
+  }
+
+  /* ================================================================== *
+   *  getWalks – resolve walking-leg graphics + distances                *
+   * ================================================================== */
+
+  /**
+   * For each walking leg that has coordinate data, generate a static map
+   * image (via Geoapify) and compute the walking distance.
+   *
+   * Mirrors AbstractHafasClientInterfaceProvider.getWalks().
+   */
+  async getWalks(trip) {
+    for (const leg of trip.legs) {
+      if (leg.type !== 'WALK' || !leg._walkCoords || leg._walkCoords.length < 2) {
+        continue;
+      }
+      const coordPairs = leg._walkCoords; // [[lat,lon], …]
+      const coords = coordPairs
+        .map(c => `${c[1]},${c[0]}`)   // lon,lat for Geoapify
+        .join(',');
+      const startCoord = coords.split(',').slice(0, 2).join(',');
+      const endCoord   = coords.split(',').slice(-2).join(',');
+      const apiKey = process.env.GEOAPIFY_API_KEY;
+
+      leg.graphic =
+        `https://maps.geoapify.com/v1/staticmap?style=positron&width=722&height=356` +
+        `&geometry=polyline:${coords};linecolor:%2300983a;linewidth:5;linestyle:longdash` +
+        `&marker=lonlat:${startCoord};type:awesome;color:%23fff04a;size:64;icon:1;contentsize:25;contentcolor:%23000000;whitecircle:no` +
+        `&marker=lonlat:${endCoord};type:awesome;color:%2300983a;size:64;icon:2;contentsize:25;contentcolor:%23ffffff;whitecircle:no` +
+        `&apiKey=${apiKey}`;
+
+      // Haversine distance
+      leg.distanceInMeters = coordPairs.reduce((sum, c, i, arr) => {
+        if (i === 0) return 0;
+        const prev = arr[i - 1];
+        const R = 6371000;
+        const dLat = (c[0] - prev[0]) * Math.PI / 180;
+        const dLon = (c[1] - prev[1]) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos(prev[0] * Math.PI / 180) * Math.cos(c[0] * Math.PI / 180) *
+          Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const cAngle = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return sum + R * cAngle;
+      }, 0);
+      leg.distanceInMeters = Math.round(leg.distanceInMeters);
+
+      // Fetch the static map and embed as data-URI
+      leg.graphic = await fetch(leg.graphic)
+        .then(res => res.arrayBuffer())
+        .then(buf => `data:image/jpeg;base64,${Buffer.from(buf).toString('base64')}`);
+
+      leg._walkCoords = null; // clean up internal field
+    }
+    return trip;
   }
 
   /**

@@ -37,5 +37,5 @@ export function createProvider(networkId) {
  * Return the default provider (SH).
  */
 export function getDefaultProvider() {
-  return createProvider('SH');
+  return createProvider('VRN');
 }
