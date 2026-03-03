@@ -59,4 +59,13 @@ export class AbstractProvider {
   async getWalks(trip) {
     return trip; // default: no-op
   }
+
+  /**
+   * Return provider-specific styled HTML for a transport line.
+   * @param {string} line – e.g. 'Bus 5', 'S1', 'U3'
+   * @returns {string} HTML string
+   */
+  lineToStyledHTML(line) {
+    return line;
+  }
 }

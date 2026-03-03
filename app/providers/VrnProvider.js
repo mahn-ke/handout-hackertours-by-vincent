@@ -14,6 +14,20 @@ export class VrnProvider extends AbstractEfaProvider {
     this.setRequestUrlEncoding('utf-8');
   }
 
+  /** @override */
+  async lineToStyledHTML(line) {
+    const imageUrl = `https://koveb-koblenz.nahverkehrsdaten.com/kovebkoblenz_gis/10_svg/${encodeURIComponent(line)}.svg`;
+    try {
+      const response = await fetch(imageUrl, { method: 'HEAD' });
+      if (response.ok) {
+        return `<img src="${imageUrl}" alt="${line}" class="o-transport-icon o-transport-icon--32" />`;
+      }
+    } catch (error) {
+      console.error('Error checking image URL:', error);
+    }
+    return `<div class="o-transport-icon o-transport-icon--16 o-transport-icon--buses"><div class="o-transport-icon__number">${encodeURIComponent(line)}</div></div>`;
+  }
+
   /**
    * Override line parsing for VRN-specific quirks (RNV Moonliner, RNV/SWK prefixes).
    * Mirrors VrnProvider.parseLine() in Java.

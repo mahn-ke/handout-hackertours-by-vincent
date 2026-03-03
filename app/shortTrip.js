@@ -151,6 +151,11 @@ export async function runShortTripMain(start, dest, arrive, provider) {
       throw new Error('No suitable trip found before arrival time.');
     }
     chosen = await p.getWalks(chosen);
+    for (const leg of chosen.legs) {
+      if (leg.line && leg.line !== 'WALK') {
+        leg.styledLine = await p.lineToStyledHTML(leg.line);
+      }
+    }
     return chosen.legs;
   } else {
     const result = await p.queryTrips(startLoc, destLoc, nowDate());
