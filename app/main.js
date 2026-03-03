@@ -11,9 +11,10 @@ const PORT = process.env.PORT || 3000;
 const PAGE_PATH = path.join(__dirname, '/static/page.html');
 
 import { runShortTripMain } from './shortTrip.js';
+import { createProvider, getDefaultProvider } from './providers/index.js';
 
-function runShortTrip(from, to, arriveBy) {
-    return runShortTripMain(from, to, arriveBy);
+function runShortTrip(from, to, arriveBy, provider) {
+    return runShortTripMain(from, to, arriveBy, provider);
 }
 
 function escapeHtml(str) {
@@ -169,7 +170,9 @@ const server = http.createServer(async (req, res) => {
         const from = url.searchParams.get('from');
         const to = url.searchParams.get('to');
         const arriveBy = url.searchParams.get('arriveBy');
-        const rs = runShortTrip(from, to, arriveBy);
+        const providerId = url.searchParams.get('provider');
+        const provider = providerId ? createProvider(providerId) : getDefaultProvider();
+        const rs = runShortTrip(from, to, arriveBy, provider);
         const [html, data] = await Promise.all([fs.readFile(PAGE_PATH, 'utf8'), rs]);
         const rows = renderRows(Array.isArray(data) ? data : [data]);
 
