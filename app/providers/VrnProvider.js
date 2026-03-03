@@ -25,7 +25,7 @@ export class VrnProvider extends AbstractEfaProvider {
     } catch (error) {
       console.error('Error checking image URL:', error);
     }
-    return `<div class="o-transport-icon o-transport-icon--16 o-transport-icon--buses"><div class="o-transport-icon__number">${encodeURIComponent(line)}</div></div>`;
+    return `<div class="vrn-bus">${encodeURIComponent(line)}</div>`;
   }
 
   /**
