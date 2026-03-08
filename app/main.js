@@ -155,7 +155,7 @@ const server = http.createServer(async (req, res) => {
                            .replace("{{ to }}", to)
                            .replace("{{ tourname }}", url.searchParams.get('tourname'))
                            .replace("{{ date }}", new Intl.DateTimeFormat('de-DE', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(arriveBy)))
-                           .replace("{{ dayRelative }}", Math.round((new Date(arriveBy) - new Date('2026-04-03T00:00:00')) / (1000 * 60 * 60 * 24)))
+                           .replace("{{ dayRelative }}", Math.ceil((new Date(arriveBy) - new Date('2026-04-03T00:00:00')) / (1000 * 60 * 60 * 24)))
                            .replace("{{ travelTime }}", formattedTravelTimeDiff)
                            .replace("{{ arrivalTime }}", formattedArrDate);
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
