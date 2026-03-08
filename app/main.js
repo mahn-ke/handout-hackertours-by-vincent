@@ -150,7 +150,7 @@ const server = http.createServer(async (req, res) => {
         const travelTime = new Date(arrDate - depDate);
         const hours = Math.floor(travelTime / (1000 * 60 * 60));
         const minutes = Math.round((travelTime % (1000 * 60 * 60)) / (1000 * 60));
-        const formattedTravelTimeDiff = hours == 0 ? `${minutes} Minuten` : `${hours}:${minutes} Stunde${hours > 1 ? 'n' : ''}`;
+        const formattedTravelTimeDiff = hours == 0 ? `${minutes} Minuten` : `${hours}:${minutes.toString().padStart(2, '0')} Stunde${hours > 1 ? 'n' : ''}`;
         const output = html.replace("{{ instructions }}", rows)
                            .replace("{{ to }}", to)
                            .replace("{{ tourname }}", url.searchParams.get('tourname'))
