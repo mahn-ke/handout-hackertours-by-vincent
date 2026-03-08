@@ -25,6 +25,7 @@ export class VrnProvider extends AbstractEfaProvider {
     } catch (error) {
       console.error('Error checking image URL:', error);
     }
+    line = line.replace("Bus ", "");
     return `<div class="vrn-bus">${encodeURIComponent(line)}</div>`;
   }
 
