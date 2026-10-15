@@ -7,6 +7,8 @@
  *   - queryMoreTrips(context, later)
  *   - getWalks(trip)
  */
+import sharp from 'sharp';
+
 export class AbstractProvider {
   /**
    * @param {string} networkId  – e.g. 'SH', 'VRN'
@@ -58,6 +60,19 @@ export class AbstractProvider {
    */
   async getWalks(trip) {
     return trip; // default: no-op
+  }
+
+  async cropWalkMapToDataUri(buffer) {
+    const image = sharp(Buffer.from(buffer));
+    const { width, height } = await image.metadata();
+    if (!width || !height || height <= 20) {
+      throw new Error('Walk map image must be taller than 20 pixels');
+    }
+    const cropped = await image
+      .extract({ left: 0, top: 0, width, height: height - 20 })
+      .png()
+      .toBuffer();
+    return `data:image/png;base64,${cropped.toString('base64')}`;
   }
 
   /**

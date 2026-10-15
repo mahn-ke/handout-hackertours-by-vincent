@@ -589,7 +589,7 @@ export class AbstractEfaProvider extends AbstractProvider {
       // Fetch the static map and embed as data-URI
       leg.graphic = await fetch(leg.graphic)
         .then(res => res.arrayBuffer())
-        .then(buf => `data:image/jpeg;base64,${Buffer.from(buf).toString('base64')}`);
+        .then(buf => this.cropWalkMapToDataUri(buf));
 
       leg._walkCoords = null; // clean up internal field
     }
