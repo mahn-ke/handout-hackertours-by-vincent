@@ -1,0 +1,10 @@
+services:
+  app:
+    build: ./app
+    image: handout-hackertours-dev:local
+    env_file:
+      - .env
+    command: ["node", "--watch", "--watch-preserve-output", "main.js"]
+    volumes:
+      - ./app:/app
+      - /app/node_modules

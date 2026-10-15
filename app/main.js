@@ -3,6 +3,8 @@ import fs from 'fs/promises';
 import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
+import swaggerUi from 'swagger-ui-dist';
+import { openapi } from './openapi.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -63,9 +65,46 @@ const server = http.createServer(async (req, res) => {
         const pathname = decodeURIComponent(url.pathname);
         const staticRoot = path.join(__dirname, 'static');
 
+        if (req.method === 'GET' && (pathname === '/swagger.json' || pathname === '/swagger/swagger.json')) {
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify(openapi));
+            return;
+        }
+
+        if (req.method === 'GET' && (pathname === '/')) {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(`<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hackertours API</title>
+    <link rel="stylesheet" href="/swagger/swagger-ui.css">
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="/swagger/swagger-ui-bundle.js"></script>
+    <script>
+        SwaggerUIBundle({ url: '/swagger.json', dom_id: '#swagger-ui', persistAuthorization: false });
+    </script>
+</body>
+</html>`);
+            return;
+        }
+
+        const swaggerAssets = {
+            '/swagger/swagger-ui.css': 'text/css; charset=utf-8',
+            '/swagger/swagger-ui-bundle.js': 'application/javascript; charset=utf-8',
+        };
+        if (req.method === 'GET' && Object.hasOwn(swaggerAssets, pathname)) {
+            res.setHeader('Content-Type', swaggerAssets[pathname]);
+            res.end(await fs.readFile(path.join(swaggerUi.getAbsoluteFSPath(), path.basename(pathname))));
+            return;
+        }
+
         const passphrase = url.searchParams.get('passphrase');
         if (
-            pathname === '/' &&
+            pathname === '/generate' &&
             (!passphrase || !process.env.PASSPHRASE || 
             !crypto.timingSafeEqual(Buffer.from(passphrase), Buffer.from(process.env.PASSPHRASE)))
         ) {
@@ -118,8 +157,8 @@ const server = http.createServer(async (req, res) => {
             return;
         }
 
-        // Dynamic page at /
-        if (req.method !== 'GET' || pathname !== '/') {
+        // Dynamic page at /generate
+        if (req.method !== 'GET' || pathname !== '/generate') {
             res.statusCode = 404;
             res.end('Not Found');
             return;

@@ -19,6 +19,7 @@
   "homepage": "https://github.com/mahn-ke/handout-hackertours-by-vincent#readme",
   "description": "",
   "dependencies": {
-    "@mapbox/polyline": "^1.2.1"
+    "@mapbox/polyline": "^1.2.1",
+    "swagger-ui-dist": "^5.0.0"
   }
 }
