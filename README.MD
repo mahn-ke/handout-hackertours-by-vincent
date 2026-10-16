@@ -16,6 +16,10 @@ Hosts the container serving [handout.hackertours.by.vincent.mahn.ke](https://han
 
 Coordinate overrides require `GEOAPIFY_API_KEY` in the service environment. Reverse-geocode results are cached in memory for 24 hours.
 
+The `/generate` endpoint returns HTML by default. Send `Accept: application/pdf` to receive a PDF;
+send `Accept: text/html` (or omit the header) to receive the existing HTML handout. PDF conversion
+uses the internal `gotenberg:3000` Compose service, which is not published to the host.
+
 ## Examples
 ```
 https://handout.hackertours.by.vincent.mahn.ke/generate

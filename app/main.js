@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import swaggerUi from 'swagger-ui-dist';
 import { openapi } from './openapi.js';
 import { resolveDestination } from './coordinateOverride.js';
+import { handoutResponse } from './pdfResponse.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -203,8 +204,10 @@ const server = http.createServer(async (req, res) => {
                            .replace("{{ dayRelative }}", Math.ceil((new Date(arriveBy) - new Date('2026-04-03T00:00:00')) / (1000 * 60 * 60 * 24)))
                            .replace("{{ travelTime }}", formattedTravelTimeDiff)
                            .replace("{{ arrivalTime }}", formattedArrDate);
-        res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.end(output);
+        const result = await handoutResponse(output, req.headers.accept);
+        res.setHeader('Content-Type', result.contentType);
+        if (result.isPdf) res.setHeader('Content-Disposition', 'inline; filename="handout.pdf"');
+        res.end(result.body);
     } catch (err) {
         res.statusCode = 500;
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');

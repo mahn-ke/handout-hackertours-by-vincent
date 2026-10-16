@@ -8,6 +8,9 @@ services:
     environment:
       - PASSPHRASE=${PASSPHRASE}
       - GEOAPIFY_API_KEY=${GEOAPIFY_API_KEY}
+      - GOTENBERG_URL=http://gotenberg:3000
+    depends_on:
+      - gotenberg
     ports:
       - "3002:3000"
 

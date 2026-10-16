@@ -19,6 +19,11 @@ export const openapi = {
                 security: [{ passphrase: [] }],
                 parameters: [
                     {
+                        name: 'Accept', in: 'header', required: false,
+                        description: 'Request application/pdf to receive a PDF; text/html or no preference returns HTML.',
+                        schema: { type: 'string' }, example: 'application/pdf',
+                    },
+                    {
                         name: 'from', in: 'query', required: true,
                         description: 'Starting point of the tour.',
                         schema: { type: 'string' }, example: 'Hamburg Messe (Eingang Mitte)',
