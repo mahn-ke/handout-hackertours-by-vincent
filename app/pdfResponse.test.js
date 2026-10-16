@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
+import {mkdtemp, writeFile} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import path from 'node:path';
 import test from 'node:test';
-import {convertHtmlToPdf, handoutResponse} from './pdfResponse.js';
+import {convertHtmlToPdf, handoutResponse, inlineAssets} from './pdfResponse.js';
 
 test('HTML is returned by default and PDF is selected when preferred', async () => {
   let calls = 0;
@@ -55,4 +58,32 @@ test('PDF conversion reports missing config, upstream errors, and invalid output
     gotenbergUrl: 'http://gotenberg:3000',
     fetchImpl: async () => new Response('not a PDF', {status: 200}),
   }), /invalid PDF/);
+});
+
+test('logo and fonts are embedded as data URIs for the PDF', async () => {
+  const staticDir = await mkdtemp(path.join(tmpdir(), 'handout-static-'));
+  await writeFile(path.join(staticDir, 'logo.png'), 'png');
+  await writeFile(path.join(staticDir, 'font.woff2'), 'woff2');
+  const html = await inlineAssets(
+    '<img src="static/logo.png"><style>src: url(font.woff2); src: url(missing.ttf)</style><p>logo.png</p>',
+    {staticDir},
+  );
+  assert.equal(
+    html,
+    `<img src="data:image/png;base64,${Buffer.from('png').toString('base64')}">`
+      + `<style>src: url(data:font/woff2;base64,${Buffer.from('woff2').toString('base64')}); src: url(missing.ttf)</style>`
+      + '<p>logo.png</p>',
+  );
+});
+
+test('the PDF is rendered from the page with its real logo embedded', async () => {
+  let uploaded;
+  await handoutResponse('<img src="static/logo.png">', 'application/pdf', {
+    gotenbergUrl: 'http://gotenberg:3000',
+    fetchImpl: async (url, options) => {
+      uploaded = await options.body.get('files').text();
+      return new Response(Buffer.from('%PDF-1.7 test'), {status: 200});
+    },
+  });
+  assert.match(uploaded, /^<img src="data:image\/png;base64,[A-Za-z0-9+/]+=*">$/);
 });
