@@ -25,8 +25,18 @@ export const openapi = {
                     },
                     {
                         name: 'to', in: 'query', required: true,
-                        description: 'Destination of the tour.',
+                        description: 'Human-readable destination shown in the handout header.',
                         schema: { type: 'string' }, example: 'Neuer Jungfernstieg 5',
+                    },
+                    {
+                        name: 'toLat', in: 'query', required: false,
+                        description: 'Optional destination latitude override. Requires toLon; reverse-geocoded to a routable address.',
+                        schema: { type: 'number', minimum: -90, maximum: 90 }, example: 53.5488,
+                    },
+                    {
+                        name: 'toLon', in: 'query', required: false,
+                        description: 'Optional destination longitude override. Requires toLat; reverse-geocoded to a routable address.',
+                        schema: { type: 'number', minimum: -180, maximum: 180 }, example: 9.9787,
                     },
                     {
                         name: 'arriveBy', in: 'query', required: true,

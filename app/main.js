@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import swaggerUi from 'swagger-ui-dist';
 import { openapi } from './openapi.js';
+import { resolveDestination } from './coordinateOverride.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -167,10 +168,15 @@ const server = http.createServer(async (req, res) => {
         // fetch from query params if provided, otherwise use defaults
         const from = url.searchParams.get('from');
         const to = url.searchParams.get('to');
+        const destination = await resolveDestination(
+            to,
+            url.searchParams.get('toLat'),
+            url.searchParams.get('toLon'),
+        );
         const arriveBy = url.searchParams.get('arriveBy');
         const providerId = url.searchParams.get('provider');
         const provider = providerId ? createProvider(providerId) : getDefaultProvider();
-        const rs = runShortTrip(from, to, arriveBy, provider);
+        const rs = runShortTrip(from, destination.routingQuery, arriveBy, provider);
         const [html, data] = await Promise.all([fs.readFile(PAGE_PATH, 'utf8'), rs]);
         const rows = renderRows(Array.isArray(data) ? data : [data]);
 
@@ -191,7 +197,7 @@ const server = http.createServer(async (req, res) => {
         const minutes = Math.round((travelTime % (1000 * 60 * 60)) / (1000 * 60));
         const formattedTravelTimeDiff = hours == 0 ? `${minutes} Minuten` : `${hours}:${minutes.toString().padStart(2, '0')} Stunde${hours > 1 ? 'n' : ''}`;
         const output = html.replace("{{ instructions }}", rows)
-                           .replace("{{ to }}", to)
+                           .replace("{{ to }}", destination.displayAddress)
                            .replace("{{ tourname }}", url.searchParams.get('tourname'))
                            .replace("{{ date }}", new Intl.DateTimeFormat('de-DE', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(arriveBy)))
                            .replace("{{ dayRelative }}", Math.ceil((new Date(arriveBy) - new Date('2026-04-03T00:00:00')) / (1000 * 60 * 60 * 24)))

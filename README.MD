@@ -8,10 +8,13 @@ Hosts the container serving [handout.hackertours.by.vincent.mahn.ke](https://han
 | --- | --- | --- |
 | `from` | Hamburg Messe (Eingang Mitte) | starting point of the tour |
 | `to` | Neuer Jungfernstieg 5 | destination of the tour |
+| `toLat` / `toLon` | `53.5488` / `9.9787` | optional coordinate override; the closest Geoapify address is used for routing while `to` remains the printed header |
 | `arriveBy` | 2026-03-03T14:20 | desired arrival time in ISO 8601 format |
 | `tourname` | Hafenrundfahrt (Anleger 7) | only changes the document title |
 | `provider` | SH | public transport provider: `SH` (default) or `VRN` |
 | `passphrase` | _available on request_ | requried for responses |
+
+Coordinate overrides require `GEOAPIFY_API_KEY` in the service environment. Reverse-geocode results are cached in memory for 24 hours.
 
 ## Examples
 ```
