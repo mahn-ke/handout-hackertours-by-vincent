@@ -3,7 +3,7 @@ version: "3.8"
 
 services:
   app:
-    image: ghcr.io/mahn-ke/handout-hackertours-by-vincent:latest@sha256:df96122e52a4398b62ab871020ab2c064d2afbed33d8216d05e7e947d1b95098
+    image: ghcr.io/mahn-ke/handout-hackertours-by-vincent:latest@sha256:e97c07c7289aaac41941b26676db7fa28f16d826d4152ce36822aefe734e227c
     restart: on-failure:5
     environment:
       - PASSPHRASE=${PASSPHRASE}
